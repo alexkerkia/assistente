@@ -8,14 +8,12 @@ import anthropic
 
 app = FastAPI()
 
-# ── Clientes ──────────────────────────────────────────────────────────────────
 anthropic_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 ZAPI_INSTANCE  = os.environ["ZAPI_INSTANCE_ID"]
 ZAPI_TOKEN     = os.environ["ZAPI_TOKEN"]
 ZAPI_CLIENT_TOKEN = os.environ["ZAPI_CLIENT_TOKEN"]
 ZAPI_BASE      = f"https://api.z-api.io/instances/{ZAPI_INSTANCE}/token/{ZAPI_TOKEN}"
 
-# ── Catálogo KERK Navy ─────────────────────────────────────────────────────────
 CATALOG = [
     {"id":"98499825","nome":"Body Lauren","tipo":"body","cor":["azul","soft blue"],"detalhes":["franzido","halter neck","detalhe dourado"],"tamanhos":["PP","P","M","G","GG"],"preco":389.90,"colecao":"Navy"},
     {"id":"98079828","nome":"Calça Cíntia","tipo":"calça","cor":["off-white","creme"],"detalhes":["fluida","cós largo franzido","wide leg"],"tamanhos":["PP","P","M","G","GG"],"preco":319.90,"colecao":"Navy"},
@@ -71,9 +69,7 @@ REGRAS:
 - Nunca use markdown com asteriscos — o WhatsApp usa *negrito* nativamente."""
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
 async def download_image(url: str) -> tuple[str, str]:
-    """Baixa imagem e retorna (base64, media_type)."""
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.get(url)
         r.raise_for_status()
@@ -84,94 +80,10 @@ async def download_image(url: str) -> tuple[str, str]:
 
 
 async def ask_claude(text: str, image_url: str = None) -> str:
-    """Chama Claude com texto e/ou imagem."""
     content = []
-
     if image_url:
         try:
             b64, media_type = await download_image(image_url)
             content.append({
                 "type": "image",
-                "source": {"type": "base64", "media_type": media_type, "data": b64}
-            })
-        except Exception as e:
-            print(f"Erro ao baixar imagem: {e}")
-
-    content.append({"type": "text", "text": text or "Que peça(s) é(são) essa(s)? Tem no catálogo?"})
-
-    response = anthropic_client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=800,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": content}]
-    )
-    return response.content[0].text
-
-
-async def send_whatsapp(phone: str, message: str):
-    """Envia mensagem de texto via Z-API."""
-    url = f"{ZAPI_BASE}/send-text"
-    payload = {"phone": phone, "message": message}
-    headers = {"Client-Token": ZAPI_CLIENT_TOKEN}
-    async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.post(url, json=payload, headers=headers)
-        r.raise_for_status()
-
-
-# ── Rotas ──────────────────────────────────────────────────────────────────────
-@app.get("/")
-def health():
-    return {"status": "KERK Assistente online ✨"}
-
-
-@app.post("/webhook")
-async def webhook(request: Request):
-    try:
-        body = await request.json()
-        print(f"Webhook recebido: {body}")
-
-        # Z-API envia diferentes estruturas — normalizar
-        msg_type = body.get("type", "")
-        phone = body.get("phone", "")
-
-        if not phone:
-            return JSONResponse({"ok": True})
-
-        # Ignorar mensagens próprias
-        if body.get("fromMe", False):
-            return JSONResponse({"ok": True})
-
-        text = ""
-        image_url = None
-
-        if msg_type == "ReceivedCallback":
-            msg = body.get("message", {})
-
-            # Texto simples
-            if "text" in msg:
-                text = msg["text"].get("message", "")
-
-            # Imagem
-            elif "image" in msg:
-                image_url = msg["image"].get("imageUrl", "")
-                text = msg["image"].get("caption", "Que peça é essa? Tem no catálogo?")
-
-            # Áudio — ignorar por ora
-            elif "audio" in msg:
-                await send_whatsapp(phone, "Desculpe, ainda não consigo ouvir áudios. Envie uma foto ou texto! 🌊")
-                return JSONResponse({"ok": True})
-
-        if not text and not image_url:
-            return JSONResponse({"ok": True})
-
-        # Processar com Claude
-        reply = await ask_claude(text, image_url)
-
-        # Responder no WhatsApp
-        await send_whatsapp(phone, reply)
-
-        return JSONResponse({"ok": True})
-
-    except Exception as e:
-        print(f"Erro no webhook: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+                "source": {"type": "base64", "media_type": me
