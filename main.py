@@ -54,9 +54,20 @@ async def webhook(request: Request):
         print(f"BODY COMPLETO: {body}")
         if not phone or body.get("fromMe"):
             return JSONResponse({"ok":True})
-        msg = body.get("message",{})
+msg = body.get("message",{})
         text, img_url = "", None
-        if "text" in msg:
+
+# Imagem no nível raiz (Z-API envia assim)
+        if "image" in body:
+            img = body["image"]
+            img_url = img.get("imageUrl") or img.get("url","")
+            text = img.get("caption","") or "Que peca e essa?"
+        # Texto no nível raiz
+        elif "text" in body:
+            t = body["text"]
+            text = t.get("message","") if isinstance(t,dict) else str(t)
+        # Fallback: dentro de message
+        elif "text" in msg:
             t = msg["text"]
             text = t.get("message","") if isinstance(t,dict) else str(t)
         elif "image" in msg:
