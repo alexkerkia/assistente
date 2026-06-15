@@ -51,6 +51,7 @@ async def webhook(request: Request):
         body = await request.json()
         phone = body.get("phone","")
         print(f"Webhook phone={phone} fromMe={body.get('fromMe')} type={body.get('type')}")
+        print(f"BODY COMPLETO: {body}")
         if not phone or body.get("fromMe"):
             return JSONResponse({"ok":True})
         msg = body.get("message",{})
