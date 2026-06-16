@@ -67,9 +67,7 @@ async def webhook(request: Request):
             img = body["image"]
             img_url = img.get("imageUrl") or img.get("url", "")
             text = img.get("caption", "") or "Que peca e essa?"
-        elif "text" in body:
-            t = body["text"]
-            text = t.get("message", "") if isinstance(t, dict) else str(t)
+
         else:
             msg = body.get("message", {})
             if "image" in msg:
